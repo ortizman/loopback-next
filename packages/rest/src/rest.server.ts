@@ -192,6 +192,7 @@ export class RestServer extends Context implements Server, HttpServerLike {
 
   protected _setupRequestHandler() {
     this._expressApp = express();
+    this.bind(RestBindings.EXPRESS_APP).to(this._expressApp);
 
     // Disable express' built-in query parser, we parse queries ourselves
     // Note that when disabled, express sets query to an empty object,
@@ -203,17 +204,8 @@ export class RestServer extends Context implements Server, HttpServerLike {
 
     this.requestHandler = this._expressApp;
 
-    // Allow CORS support for all endpoints so that users
-    // can test with online SwaggerUI instance
-    const corsOptions = this.config.cors || {
-      origin: '*',
-      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-      preflightContinue: false,
-      optionsSuccessStatus: 204,
-      maxAge: 86400,
-      credentials: true,
-    };
-    this._expressApp.use(cors(corsOptions));
+    // Enable CORS
+    this._setupCORS();
 
     // Place the assets router here before controllers
     this._setupRouterForStaticAssets();
@@ -232,6 +224,24 @@ export class RestServer extends Context implements Server, HttpServerLike {
         this._onUnhandledError(req, res, err);
       },
     );
+  }
+
+  /**
+   * Set up CORS middleware
+   */
+  protected _setupCORS() {
+    // Allow CORS support for all endpoints so that users
+    // can test with online SwaggerUI instance
+    const corsOptions = this.config.cors || {
+      origin: '*',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+      preflightContinue: false,
+      optionsSuccessStatus: 204,
+      maxAge: 86400,
+      credentials: true,
+    };
+    // Set up CORS
+    this._expressApp.use(cors(corsOptions));
   }
 
   /**
@@ -273,12 +283,28 @@ export class RestServer extends Context implements Server, HttpServerLike {
     return this.httpHandler.handleRequest(request, response);
   }
 
+  protected _registerMiddleware() {
+    for (const b of this.find('middleware.*')) {
+      const middleware = this.getSync<Middleware>(b.key);
+      if (!middleware.method) {
+        this._expressApp.use(middleware.path || '/', middleware.handler);
+      } else {
+        this._expressApp[middleware.method](
+          middleware.path || '/',
+          middleware.handler,
+        );
+      }
+    }
+  }
+
   protected _setupHandlerIfNeeded() {
     // TODO(bajtos) support hot-reloading of controllers
     // after the app started. The idea is to rebuild the HttpHandler
     // instance whenever a controller was added/deleted.
     // See https://github.com/strongloop/loopback-next/issues/433
     if (this._httpHandler) return;
+
+    this._registerMiddleware();
 
     this._httpHandler = new HttpHandler(this);
     for (const b of this.find('controllers.*')) {
@@ -825,3 +851,20 @@ export interface RestServerOptions {
  * @interface RestServerConfig
  */
 export type RestServerConfig = RestServerOptions & HttpServerOptions;
+
+/**
+ * Middleware registration entry
+ */
+export interface Middleware {
+  method?:
+    | 'all'
+    | 'get'
+    | 'post'
+    | 'put'
+    | 'delete'
+    | 'patch'
+    | 'options'
+    | 'head';
+  path?: PathParams;
+  handler: express.RequestHandler;
+}

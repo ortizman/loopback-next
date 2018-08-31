@@ -30,6 +30,7 @@ import {
 import {HttpProtocol} from '@loopback/http-server';
 import * as https from 'https';
 import {ErrorWriterOptions} from 'strong-error-handler';
+import {Application} from 'express';
 
 /**
  * RestServer-specific bindings
@@ -65,6 +66,10 @@ export namespace RestBindings {
    * Internal binding key for http-handler
    */
   export const HANDLER = BindingKey.create<HttpHandler>('rest.handler');
+  /**
+   * Binding key for express app
+   */
+  export const EXPRESS_APP = BindingKey.create<Application>('rest.express.app');
   /**
    * Binding key for setting and injecting Reject action's error handling
    * options.
