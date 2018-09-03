@@ -9,12 +9,6 @@ import {HttpError} from 'http-errors';
 import {RestBindings} from '../keys';
 import {writeErrorToResponse, ErrorWriterOptions} from 'strong-error-handler';
 
-// TODO(bajtos) Make this mapping configurable at RestServer level,
-// allow apps and extensions to contribute additional mappings.
-const codeToStatusCodeMapping: {[key: string]: number} = {
-  MODEL_NOT_FOUND: 404,
-};
-
 export class RejectProvider implements Provider<Reject> {
   constructor(
     @inject(RestBindings.SequenceActions.LOG_ERROR)
@@ -28,15 +22,7 @@ export class RejectProvider implements Provider<Reject> {
   }
 
   action({request, response}: HandlerContext, error: Error) {
-    const err = error as HttpError & {code?: string};
-
-    if (!err.status && !err.statusCode && err.code) {
-      const customStatus = codeToStatusCodeMapping[err.code];
-      if (customStatus) {
-        err.statusCode = customStatus;
-      }
-    }
-
+    const err = <HttpError>error;
     const statusCode = err.statusCode || err.status || 500;
     writeErrorToResponse(err, request, response, this.errorWriterOptions);
     this.logError(error, statusCode, request);

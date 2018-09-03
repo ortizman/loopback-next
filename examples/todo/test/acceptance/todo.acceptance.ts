@@ -128,7 +128,7 @@ describe('Application', () => {
         .send()
         .expect(200);
       await expect(todoRepo.findById(persistedTodo.id)).to.be.rejectedWith(
-        /Model not found: Todo with id/,
+        /no Todo found with id/,
       );
     });
   });
