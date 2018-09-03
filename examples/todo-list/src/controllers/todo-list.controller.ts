@@ -3,8 +3,13 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {Filter, Where, repository} from '@loopback/repository';
-import {post, param, get, patch, del, requestBody} from '@loopback/rest';
+import {
+  EntityNotFoundError,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
+import {del, get, param, patch, post, requestBody} from '@loopback/rest';
 import {TodoList} from '../models';
 import {TodoListRepository} from '../repositories';
 
@@ -41,7 +46,9 @@ export class TodoListController {
 
   @get('/todo-lists/{id}')
   async findById(@param.path.number('id') id: number): Promise<TodoList> {
-    return await this.todoListRepository.findById(id);
+    const maybeResult = await this.todoListRepository.findById(id);
+    if (maybeResult) return maybeResult;
+    throw new EntityNotFoundError(TodoList, id, {statusCode: 404});
   }
 
   @patch('/todo-lists/{id}')

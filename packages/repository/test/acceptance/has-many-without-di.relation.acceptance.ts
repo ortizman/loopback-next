@@ -48,7 +48,7 @@ describe('HasMany relation', () => {
       description: 'order 1',
     });
 
-    const persisted = await orderRepo.findById(order.id);
+    const persisted = await orderRepo.getById(order.id);
     expect(persisted.toObject()).to.deepEqual(order.toObject());
   });
 

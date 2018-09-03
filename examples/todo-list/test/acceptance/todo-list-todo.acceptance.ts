@@ -83,7 +83,7 @@ describe('Application', () => {
       const updatedTodos = await todoListRepo
         .todos(persistedTodoList.id)
         .find();
-      const notUpdatedTodo = await todoRepo.findById(notMyTodo.id);
+      const notUpdatedTodo = await todoRepo.getById(notMyTodo.id);
       for (const todo of updatedTodos) {
         expect(todo.toJSON()).to.containEql(patchedIsCompleteTodo);
       }

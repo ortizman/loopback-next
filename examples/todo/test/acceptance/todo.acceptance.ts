@@ -127,9 +127,8 @@ describe('Application', () => {
         .del(`/todos/${persistedTodo.id}`)
         .send()
         .expect(200);
-      await expect(todoRepo.findById(persistedTodo.id)).to.be.rejectedWith(
-        /no Todo found with id/,
-      );
+      const found = await todoRepo.findById(persistedTodo.id);
+      expect(found).to.be.undefined();
     });
   });
 

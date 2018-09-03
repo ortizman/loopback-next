@@ -1,4 +1,10 @@
-import {Filter, Where, repository} from '@loopback/repository';
+import {
+  EntityNotFoundError,
+  Filter,
+  repository,
+  Where,
+} from '@loopback/repository';
+
 import {
   post,
   param,
@@ -43,7 +49,9 @@ export class <%= className %>Controller {
 
   @get('<%= httpPathName %>/{id}')
   async findById(@param.path.<%= idType %>('id') id: <%= idType %>): Promise<<%= modelName %>> {
-    return await this.<%= repositoryNameCamel %>.findById(id);
+    const maybeResult = await this.<%= repositoryNameCamel %>.findById(id);
+    if (maybeResult) return maybeResult;
+    throw new EntityNotFoundError(TodoList, id, {statusCode: 404});
   }
 
   @patch('<%= httpPathName %>/{id}')

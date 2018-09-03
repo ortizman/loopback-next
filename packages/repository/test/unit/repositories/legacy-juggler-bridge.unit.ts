@@ -45,7 +45,7 @@ describe('DefaultCrudRepository', () => {
 
   class Note extends Entity {
     static definition = new ModelDefinition({
-      name: 'note3',
+      name: 'Note',
       properties: {
         title: 'string',
         content: 'string',
@@ -67,12 +67,6 @@ describe('DefaultCrudRepository', () => {
       name: 'db',
       connector: 'memory',
     });
-  });
-
-  afterEach(async () => {
-    const model = ds.createModel<typeof juggler.PersistedModel>('note3');
-    model.attachTo(ds);
-    await model.deleteAll();
   });
 
   context('constructor', () => {
@@ -134,7 +128,7 @@ describe('DefaultCrudRepository', () => {
   it('implements Repository.create()', async () => {
     const repo = new DefaultCrudRepository(Note, ds);
     const note = await repo.create({title: 't3', content: 'c3'});
-    const result = await repo.findById(note.id);
+    const result = await repo.getById(note.id);
     expect(result.toJSON()).to.eql(note.toJSON());
   });
 
@@ -182,6 +176,38 @@ describe('DefaultCrudRepository', () => {
       order: ['content DESC'],
     });
     expect(note).to.be.null();
+  });
+
+  describe('findById', () => {
+    it('returns the correct instance', async () => {
+      const repo = new DefaultCrudRepository(Note, ds);
+      const note = await repo.create({title: 'a-title', content: 'a-content'});
+      const result = await repo.findById(note.id);
+      expect(result && result.toJSON()).to.eql(note.toJSON());
+    });
+
+    it('returns null when the instance does not exist', async () => {
+      const repo = new DefaultCrudRepository(Note, ds);
+      const result = await repo.findById(999999);
+      expect(result).to.be.undefined();
+    });
+  });
+
+  describe('getById', () => {
+    it('returns the correct instance', async () => {
+      const repo = new DefaultCrudRepository(Note, ds);
+      const note = await repo.create({title: 'a-title', content: 'a-content'});
+      const result = await repo.getById(note.id);
+      expect(result.toJSON()).to.eql(note.toJSON());
+    });
+
+    it('throws when the instance does not exist', async () => {
+      const repo = new DefaultCrudRepository(Note, ds);
+      return expect(repo.getById(999999)).to.be.rejectedWith({
+        message: 'Entity not found: Note with id 999999',
+        code: 'ENTITY_NOT_FOUND',
+      });
+    });
   });
 
   it('implements Repository.delete()', async () => {
@@ -248,7 +274,7 @@ describe('DefaultCrudRepository', () => {
   it('implements Repository.save() without id', async () => {
     const repo = new DefaultCrudRepository(Note, ds);
     const note = await repo.save(new Note({title: 't3', content: 'c3'}));
-    const result = await repo.findById(note!.id);
+    const result = await repo.getById(note!.id);
     expect(result.toJSON()).to.eql(note!.toJSON());
   });
 
@@ -257,7 +283,7 @@ describe('DefaultCrudRepository', () => {
     const note1 = await repo.create({title: 't3', content: 'c3'});
     note1.content = 'c4';
     const note = await repo.save(note1);
-    const result = await repo.findById(note!.id);
+    const result = await repo.getById(note!.id);
     expect(result.toJSON()).to.eql(note1.toJSON());
   });
 
@@ -268,7 +294,7 @@ describe('DefaultCrudRepository', () => {
     note1.content = undefined;
     const ok = await repo.replaceById(note1.id, note1);
     expect(ok).to.be.true();
-    const result = await repo.findById(note1.id);
+    const result = await repo.getById(note1.id);
     expect(result.toJSON()).to.eql(note1.toJSON());
   });
 
@@ -277,16 +303,5 @@ describe('DefaultCrudRepository', () => {
     const note1 = await repo.create({title: 't3', content: 'c3'});
     const ok = await repo.exists(note1.id);
     expect(ok).to.be.true();
-  });
-
-  it('throws if findById does not return a value', async () => {
-    const repo = new DefaultCrudRepository(Note, ds);
-    try {
-      await repo.findById(999999);
-    } catch (err) {
-      expect(err).to.match(/no Note was found with id/);
-      return;
-    }
-    throw new Error('No error was returned!');
   });
 });

@@ -16,6 +16,7 @@ import {
 import {DataSource} from '../datasource';
 import {CrudConnector} from '../connectors';
 import {Filter, Where} from '../query';
+import {EntityNotFoundError} from '../errors';
 
 // tslint:disable:no-unused-variable
 
@@ -134,12 +135,22 @@ export interface EntityCrudRepository<T extends Entity, ID>
   delete(entity: DataObject<T>, options?: Options): Promise<boolean>;
 
   /**
-   * Find an entity by id
+   * Find an entity by id, return `undefined` if not found.
    * @param id Value for the entity id
    * @param options Options for the operations
    * @returns A promise of an entity found for the id
    */
-  findById(id: ID, filter?: Filter, options?: Options): Promise<T>;
+  findById(id: ID, filter?: Filter, options?: Options): Promise<T | undefined>;
+
+  /**
+   * Find an entity by id, return a rejected promise if the entity
+   * does not exist.
+   *
+   * @param id Value for the entity id
+   * @param options Options for the operations
+   * @returns A promise of an entity found for the id
+   */
+  getById(id: ID, filter?: Filter, options?: Options): Promise<T>;
 
   /**
    * Update an entity by id with property/value pairs in the data object
@@ -250,7 +261,7 @@ export class CrudRepositoryImpl<T extends Entity, ID>
     return this.toModels(this.connector.find(this.model, filter, options));
   }
 
-  findById(id: ID, options?: Options): Promise<T> {
+  findById(id: ID, filter?: Filter, options?: Options): Promise<T | undefined> {
     if (typeof this.connector.findById === 'function') {
       return this.toModel(this.connector.findById(this.model, id, options));
     }
@@ -260,6 +271,12 @@ export class CrudRepositoryImpl<T extends Entity, ID>
       .then((entities: T[]) => {
         return entities[0];
       });
+  }
+
+  async getById(id: ID, filter?: Filter, options?: Options): Promise<T> {
+    const maybeResult = await this.findById(id, options);
+    if (maybeResult) return maybeResult;
+    throw new EntityNotFoundError(this.model.name, id);
   }
 
   update(entity: DataObject<T>, options?: Options): Promise<boolean> {

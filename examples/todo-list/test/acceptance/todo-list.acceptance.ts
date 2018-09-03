@@ -108,9 +108,8 @@ describe('Application', () => {
         .del(`/todo-lists/${persistedTodoList.id}`)
         .send()
         .expect(200);
-      await expect(
-        todoListRepo.findById(persistedTodoList.id),
-      ).to.be.rejectedWith(/no TodoList found with id/);
+      const found = await todoListRepo.findById(persistedTodoList.id);
+      expect(found).to.be.undefined();
     });
   });
 

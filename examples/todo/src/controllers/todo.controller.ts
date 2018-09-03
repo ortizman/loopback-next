@@ -4,7 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {inject} from '@loopback/core';
-import {repository} from '@loopback/repository';
+import {repository, EntityNotFoundError} from '@loopback/repository';
 import {del, get, param, patch, post, put, requestBody} from '@loopback/rest';
 import {Todo} from '../models';
 import {TodoRepository} from '../repositories';
@@ -35,7 +35,9 @@ export class TodoController {
     @param.path.number('id') id: number,
     @param.query.boolean('items') items?: boolean,
   ): Promise<Todo> {
-    return await this.todoRepo.findById(id);
+    const maybeResult = await this.todoRepo.findById(id);
+    if (maybeResult) return maybeResult;
+    throw new EntityNotFoundError(Todo, id, {statusCode: 404});
   }
 
   @get('/todos')

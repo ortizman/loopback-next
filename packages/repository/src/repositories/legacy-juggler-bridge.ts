@@ -3,26 +3,26 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import * as legacy from 'loopback-datasource-juggler';
-
-import * as assert from 'assert';
 import {isPromiseLike} from '@loopback/context';
+import * as assert from 'assert';
+import * as legacy from 'loopback-datasource-juggler';
 import {
-  Options,
   AnyObject,
   Command,
-  NamedParameters,
-  PositionalParameters,
   DataObject,
+  NamedParameters,
+  Options,
+  PositionalParameters,
 } from '../common-types';
+import {HasManyDefinition} from '../decorators/relation.decorator';
+import {EntityNotFoundError} from '../errors';
 import {Entity, ModelDefinition} from '../model';
 import {Filter, Where} from '../query';
-import {EntityCrudRepository} from './repository';
 import {
   createHasManyRepositoryFactory,
   HasManyRepositoryFactory,
 } from './relation.factory';
-import {HasManyDefinition} from '../decorators/relation.decorator';
+import {EntityCrudRepository} from './repository';
 
 export namespace juggler {
   export import DataSource = legacy.DataSource;
@@ -206,14 +206,25 @@ export class DefaultCrudRepository<T extends Entity, ID>
     return this.toEntity(model);
   }
 
-  async findById(id: ID, filter?: Filter, options?: Options): Promise<T> {
+  async findById(
+    id: ID,
+    filter?: Filter,
+    options?: Options,
+  ): Promise<T | undefined> {
     const model = await ensurePromise(
       this.modelClass.findById(id, filter, options),
     );
     if (!model) {
-      throw new Error(`no ${this.modelClass.name} found with id "${id}"`);
+      // entity instance not found
+      return undefined;
     }
     return this.toEntity(model);
+  }
+
+  async getById(id: ID, filter?: Filter, options?: Options): Promise<T> {
+    const maybeResult = await this.findById(id, filter, options);
+    if (maybeResult) return maybeResult;
+    throw new EntityNotFoundError(this.modelClass.name, id);
   }
 
   update(entity: T, options?: Options): Promise<boolean> {
