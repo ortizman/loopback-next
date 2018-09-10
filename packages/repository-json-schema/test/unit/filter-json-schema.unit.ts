@@ -10,27 +10,6 @@ import {getFilterJsonSchemaFor} from '../../src/filter-json-schema';
 import {JsonSchema} from '../../src';
 
 describe('getFilterJsonSchemaFor', () => {
-  @model()
-  class Order extends Entity {
-    @property({id: true})
-    id: number;
-
-    @property()
-    customerId: number;
-  }
-
-  @model()
-  class Customer extends Entity {
-    @property({id: true})
-    id: number;
-
-    @property()
-    name: string;
-
-    @hasMany(Order)
-    orders?: Order[];
-  }
-
   let ajv: Ajv.Ajv;
   let customerFilterSchema: JsonSchema;
 
@@ -155,4 +134,26 @@ describe('getFilterJsonSchemaFor', () => {
     const result = isValid ? SUCCESS_MSG : ajv.errorsText(ajv.errors!);
     expect(result).to.equal(SUCCESS_MSG);
   }
+
+  @model()
+  class Order extends Entity {
+    @property({id: true})
+    id: number;
+
+    @property()
+    customerId: number;
+  }
+
+  @model()
+  class Customer extends Entity {
+    @property({id: true})
+    id: number;
+
+    @property()
+    name: string;
+
+    @hasMany(Order)
+    orders?: Order[];
+  }
+
 });
